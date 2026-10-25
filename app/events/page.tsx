@@ -114,9 +114,23 @@ export default function PublicEvents() {
                   {/* ADDED COUNTDOWN */}
                   <Countdown date={event.date} time={event.time} />
                   
-                  <button onClick={() => handleRegisterClick(event)} className="btn btn-primary" style={{ marginTop: "auto", alignSelf: "center", padding: "14px 40px" }}>
-                    REGISTER NOW
-                  </button>
+                  {/* ADDED LIVE LINK LOGIC */}
+                  {event.liveLink ? (
+                    <a 
+                      href={event.liveLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="btn btn-primary" 
+                      style={{ marginTop: "auto", alignSelf: "center", padding: "14px 40px", backgroundColor: "#FF0000", color: "#FFF", display: "flex", alignItems: "center", gap: "10px", animation: "pulse-logo 2s infinite" }}
+                    >
+                      <i className="fas fa-play-circle"></i> WATCH LIVE NOW
+                    </a>
+                  ) : (
+                    <button onClick={() => handleRegisterClick(event)} className="btn btn-primary" style={{ marginTop: "auto", alignSelf: "center", padding: "14px 40px" }}>
+                      REGISTER NOW
+                    </button>
+                  )}
+                  
                 </div>
               </div>
             ))}

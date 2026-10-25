@@ -27,7 +27,7 @@ export default function Home() {
         const eventsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const upcoming = eventsData.filter((e: any) => e.status === "Upcoming");
         upcoming.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        if (upcoming.length > 0) setUpcomingEvent(upcoming[0]);
+        if (upcoming.length > 0) setUpcomingEvent(upcoming[0]); // Always gets the nearest event
       } catch (error) {
         console.error("Error:", error);
       }
@@ -50,7 +50,6 @@ export default function Home() {
           <h1 className="hero-heading">{settings.heroHeading}</h1>
           <p className="hero-subheading">{settings.heroSubheading}</p>
           <div className="hero-buttons">
-            {/* Changed from <a> to <Link> */}
             <Link href="/events" className="btn btn-primary">UPCOMING EVENTS</Link>
             <Link href="/about" className="btn btn-secondary">ABOUT US</Link>
           </div>
@@ -85,7 +84,6 @@ export default function Home() {
                 </p>
                 <p style={{ color: "#A89F91", marginBottom: "10px" }}>
                   <i className="fas fa-calendar-alt" style={{ marginRight: "10px", color: "var(--secondary)" }}></i> 
-                  {/* Formatted Date */}
                   {formatDate(upcomingEvent.date)} at {upcomingEvent.time}
                 </p>
                 <p style={{ color: "#A89F91", marginBottom: "20px" }}>
@@ -93,12 +91,26 @@ export default function Home() {
                   {upcomingEvent.location}
                 </p>
 
-                {/* ADDED COUNTDOWN */}
                 <Countdown date={upcomingEvent.date} time={upcomingEvent.time} />
 
-                <Link href="/events" className="btn btn-primary" style={{ alignSelf: "flex-start", marginTop: "10px" }}>
-                  REGISTER NOW
-                </Link>
+                {/* ADDED LIVE LINK LOGIC */}
+                {upcomingEvent.liveLink ? (
+                  <div style={{ marginTop: "10px" }}>
+                    <a 
+                      href={upcomingEvent.liveLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="btn btn-primary" 
+                      style={{ backgroundColor: "#FF0000", color: "#FFF", display: "inline-flex", alignItems: "center", gap: "10px", animation: "pulse-logo 2s infinite" }}
+                    >
+                      <i className="fas fa-play-circle"></i> WATCH LIVE NOW
+                    </a>
+                  </div>
+                ) : (
+                  <Link href="/events" className="btn btn-primary" style={{ alignSelf: "flex-start", marginTop: "10px" }}>
+                    REGISTER NOW
+                  </Link>
+                )}
               </div>
 
             </div>

@@ -19,6 +19,7 @@ export default function AddEvent() {
     location: "",
     flyerUrl: "",
     whatsappLink: "",
+    liveLink: "", // <-- ADDED LIVE LINK
     eventType: "REJOICE",
     status: "Upcoming"
   });
@@ -33,7 +34,6 @@ export default function AddEvent() {
     try {
       const data = new FormData();
       data.append("file", file);
-      // Using the credentials from your handoff doc
       data.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "qol_asaph_unsigned");
       
       const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "izxlyyn5"}/image/upload`, {
@@ -122,7 +122,7 @@ export default function AddEvent() {
               <input type="text" name="location" value={formData.location} onChange={handleChange} required className="admin-input" placeholder="e.g. RCCG Breakthrough Cathedral, Akure" />
             </div>
 
-            {/* UPDATED: File Upload for Flyer */}
+            {/* File Upload for Flyer */}
             <div className="admin-form-group">
               <label>Event Flyer (Upload Image)</label>
               <input 
@@ -150,6 +150,13 @@ export default function AddEvent() {
             <div className="admin-form-group">
               <label>WhatsApp Group Link</label>
               <input type="url" name="whatsappLink" value={formData.whatsappLink} onChange={handleChange} className="admin-input" placeholder="https://chat.whatsapp.com/..." />
+            </div>
+
+            {/* ADDED: Live Link */}
+            <div className="admin-form-group">
+              <label>Live Stream Link (YouTube, Facebook, etc.)</label>
+              <input type="url" name="liveLink" value={formData.liveLink} onChange={handleChange} className="admin-input" placeholder="https://youtube.com/live/..." />
+              <p style={{ fontSize: "0.75rem", color: "#A89F91", marginTop: "5px" }}>Leave blank if there is no live stream. Add this once the event starts.</p>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "20px" }}>
