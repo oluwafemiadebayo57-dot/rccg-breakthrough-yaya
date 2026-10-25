@@ -19,7 +19,6 @@ export default function AdminLogin() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // If successful, redirect to the dashboard
       router.push("/admin");
     } catch (err: any) {
       console.error(err);
@@ -30,44 +29,49 @@ export default function AdminLogin() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#040404", padding: "20px" }}>
-      <div style={{ backgroundColor: "rgba(255,255,255,0.05)", padding: "40px", borderRadius: "20px", width: "100%", maxWidth: "400px", border: "1px solid rgba(255,174,0,0.2)" }}>
-        <h1 style={{ color: "#FFAE00", textAlign: "center", marginBottom: "30px", fontFamily: "Cinzel, serif", fontSize: "2rem" }}>
-          Admin Login
+    <div className="admin-layout" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="admin-card" style={{ width: "100%", maxWidth: "450px", padding: "50px 40px" }}>
+        
+        <h1 style={{ color: "var(--secondary)", textAlign: "center", marginBottom: "10px", fontFamily: "Cinzel, serif", fontSize: "2rem" }}>
+          YAYA ADMIN
         </h1>
+        <p style={{ textAlign: "center", color: "#64748B", marginBottom: "30px" }}>Secure Login</p>
         
         {error && (
-          <div style={{ backgroundColor: "rgba(255,0,0,0.2)", color: "#ff4d4d", padding: "10px", borderRadius: "8px", marginBottom: "20px", textAlign: "center" }}>
+          <div style={{ backgroundColor: "rgba(239, 68, 68, 0.1)", color: "#EF4444", padding: "10px", borderRadius: "8px", marginBottom: "20px", textAlign: "center", border: "1px solid #EF4444" }}>
             {error}
           </div>
         )}
 
         <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div>
-            <label style={{ display: "block", color: "#FFF6E1", marginBottom: "8px" }}>Email</label>
+          <div className="admin-form-group">
+            <label>Email Address</label>
             <input 
               type="email" 
+              className="admin-input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,174,0,0.3)", backgroundColor: "rgba(255,255,255,0.1)", color: "white" }}
+              placeholder="admin@rccgyaya.com"
             />
           </div>
-          <div>
-            <label style={{ display: "block", color: "#FFF6E1", marginBottom: "8px" }}>Password</label>
+          <div className="admin-form-group">
+            <label>Password</label>
             <input 
               type="password" 
+              className="admin-input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,174,0,0.3)", backgroundColor: "rgba(255,255,255,0.1)", color: "white" }}
+              placeholder="••••••••"
             />
           </div>
           
           <button 
             type="submit" 
             disabled={isLoading}
-            style={{ backgroundColor: "#FFAE00", color: "#040404", padding: "14px", borderRadius: "8px", border: "none", fontWeight: "bold", cursor: "pointer", marginTop: "10px" }}
+            className="admin-btn admin-btn-primary"
+            style={{ marginTop: "10px", padding: "16px" }}
           >
             {isLoading ? "LOGGING IN..." : "LOGIN"}
           </button>

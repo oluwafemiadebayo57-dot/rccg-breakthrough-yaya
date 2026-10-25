@@ -1,273 +1,203 @@
 "use client";
 
-import "../../styles/events-style.css";
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, orderBy, getDocs } from "firebase/firestore";
+import { collection, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import Link from "next/link";
 
-export default function Events() {
-  const [showMore, setShowMore] = useState(false);
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-  const [videoModalOpen, setVideoModalOpen] = useState(false);
-
-  const [galleryImages, setGalleryImages] = useState<string[]>([]);
-  const [loadingGallery, setLoadingGallery] = useState(true);
-
-  const [featuredEvent, setFeaturedEvent] = useState<any>(null);
-  const [loadingEvent, setLoadingEvent] = useState(true);
-
-  const [timeLeft, setTimeLeft] = useState({ days: "00", hours: "00", minutes: "00", seconds: "00" });
+export default function PublicEvents() {
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [department, setDepartment] = useState("");
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchEvents = async () => {
       try {
-        const galleryQuery = query(collection(db, "gallery"), orderBy("createdAt", "desc"));
-        const gallerySnapshot = await getDocs(galleryQuery);
-        setGalleryImages(gallerySnapshot.docs.map(doc => doc.data().imageUrl));
-
-        const eventsQuery = query(collection(db, "events"), orderBy("createdAt", "desc"));
-        const eventsSnapshot = await getDocs(eventsQuery);
-        
-        if (!eventsSnapshot.empty) {
-          setFeaturedEvent(eventsSnapshot.docs[0].data());
-        }
+        const querySnapshot = await getDocs(collection(db, "events"));
+        const eventsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const upcoming = eventsData.filter((e: any) => e.status === "Upcoming");
+        upcoming.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        setEvents(upcoming);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching events:", error);
       } finally {
-        setLoadingGallery(false);
-        setLoadingEvent(false);
+        setLoading(false);
       }
     };
-    fetchData();
+    fetchEvents();
   }, []);
 
-  useEffect(() => {
-    const targetDate = new Date();
-    targetDate.setMonth(targetDate.getMonth() + 6);
-    targetDate.setDate(15);
-    targetDate.setHours(0, 0, 0, 0);
+  const handleRegisterClick = (event: any) => {
+    setSelectedEvent(event);
+    setIsModalOpen(true);
+    setRegistrationSuccess(false);
+    setName(""); setEmail(""); setPhone(""); setDepartment("");
+  };
 
-    const interval = setInterval(() => {
-      const diff = targetDate.getTime() - new Date().getTime();
-      
-      if (diff <= 0) {
-        setTimeLeft({ days: "00", hours: "00", minutes: "00", seconds: "00" });
-        clearInterval(interval);
-        return;
-      }
-
-      const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const s = Math.floor((diff % (1000 * 60)) / 1000);
-
-      setTimeLeft({
-        days: String(d).padStart(2, "0"),
-        hours: String(h).padStart(2, "0"),
-        minutes: String(m).padStart(2, "0"),
-        seconds: String(s).padStart(2, "0"),
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsRegistering(true);
+    try {
+      await addDoc(collection(db, "registrations"), {
+        eventId: selectedEvent.id, eventTitle: selectedEvent.title,
+        name, email, phone, department, createdAt: serverTimestamp(),
       });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (lightboxImage || videoModalOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
+      setRegistrationSuccess(true);
+    } catch (error) {
+      alert("Registration failed. Please try again.");
+    } finally {
+      setIsRegistering(false);
     }
-  }, [lightboxImage, videoModalOpen]);
+  };
+
+  // Helper to format the date beautifully
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const options: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+  };
 
   return (
-    <>
-      {/* SECTION 1: HERO */}
-      <section id="hero">
-        <div className="hero-overlay"></div>
-        <div className="container hero-content">
-          <div className="hero-glass-card">
-            <h1>EVENTS</h1>
-            <div className="golden-line"></div>
-            <p className="hero-subtitle">Gathering to raise pleasant incense to Yahweh</p>
-          </div>
+    <div style={{ minHeight: "100vh", paddingTop: "140px", paddingBottom: "80px" }}>
+      <div className="container">
+        
+        <div className="section-title">
+          <h2>UPCOMING EVENTS</h2>
+          <p>Join us for our next gathering</p>
         </div>
-      </section>
 
-      {/* SECTION 2: FEATURED EVENT */}
-      <section id="featured-event">
-        <div className="container">
-          {loadingEvent ? (
-            <p style={{ textAlign: "center", color: "#FFF6E1", padding: "40px" }}>Loading event details...</p>
-          ) : featuredEvent ? (
-            <>
-              <div className="section-header">
-                <h2 className="section-title">FEATURED EVENT</h2>
-                <p className="section-subtitle">{featuredEvent.title} - {featuredEvent.subtitle}</p>
-              </div>
-              <div className="featured-grid">
-                <div className="flyer-container">
-                  <div className="flyer-placeholder">
-                    <img src={featuredEvent.flyerUrl} alt={`${featuredEvent.title} Flyer`} style={{ width: "100%", height: "100%", objectFit: "cover" }} loading="eager" fetchPriority="high" />
-                  </div>
+        {loading ? (
+          <p style={{ textAlign: "center", color: "var(--light)" }}>Loading events...</p>
+        ) : events.length === 0 ? (
+          <p style={{ textAlign: "center", color: "var(--light)" }}>No upcoming events at the moment. Check back soon!</p>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "30px", maxWidth: "1000px", margin: "0 auto" }}>
+            {events.map((event) => (
+              <div key={event.id} className="glass-dark" style={{ borderRadius: "20px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                
+                {/* Fixed image aspect ratio and padding to prevent stretching */}
+                <div style={{ width: "100%", height: "280px", backgroundColor: "#0a0703", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderBottom: "2px solid var(--secondary)" }}>
+                   <img src={event.flyerUrl} alt={event.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
-                <div className="event-details">
-                  <h3>{featuredEvent.title}</h3>
-                  <div className="event-meta">
-                    <span><i className="fas fa-calendar-day"></i> {featuredEvent.date}</span>
-                    <span><i className="fas fa-map-marker-alt"></i> {featuredEvent.location}</span>
-                  </div>
-                  <div className="event-description">
-                    <p>{featuredEvent.description}</p>
-                  </div>
-                  <div className="event-highlights">
-                    <span><i className="fas fa-music"></i> Prophetic Worship Session</span>
-                    <span><i className="fas fa-harp"></i> Ancient Sound Ministration</span>
-                    <span><i className="fas fa-hands-praying"></i> Commissioning Service</span>
-                    <span><i className="fas fa-users"></i> Corporate Prayer &amp; Fellowship</span>
+                
+                <div style={{ padding: "30px", flex: 1, display: "flex", flexDirection: "column" }}>
+                  <span style={{ backgroundColor: "rgba(216, 67, 21, 0.2)", color: "var(--primary)", padding: "6px 14px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px", border: "1px solid var(--secondary)", alignSelf: "flex-start", marginBottom: "15px" }}>
+                    {event.eventType}
+                  </span>
+                  
+                  <h3 style={{ fontFamily: "var(--font-heading)", fontSize: "1.6rem", color: "var(--primary)", margin: "0 0 5px 0" }}>
+                    {event.title}
+                  </h3>
+                  
+                  {/* Added proper theme label */}
+                  <p style={{ color: "var(--secondary)", fontWeight: "700", fontSize: "1rem", marginBottom: "20px" }}>
+                    Theme: {event.theme}
+                  </p>
+                  
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "25px" }}>
+                    <p style={{ color: "#D1C7B8", fontSize: "0.9rem", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
+                      <i className="fas fa-calendar-alt" style={{ color: "var(--primary)" }}></i> {formatDate(event.date)} at {event.time}
+                    </p>
+                    <p style={{ color: "#D1C7B8", fontSize: "0.9rem", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
+                      <i className="fas fa-map-marker-alt" style={{ color: "var(--primary)" }}></i> {event.location}
+                    </p>
                   </div>
                   
-                  {featuredEvent.highlightVideoUrl && (
-                    <button onClick={() => setVideoModalOpen(true)} className="btn-glass btn-recap" style={{ border: 'none', cursor: 'pointer' }}>
-                      WATCH HIGHLIGHT
-                    </button>
-                  )}
+                  {/* Centered button, normal width */}
+                  <button onClick={() => handleRegisterClick(event)} className="btn btn-primary" style={{ marginTop: "auto", alignSelf: "center", padding: "14px 40px" }}>
+                    REGISTER NOW
+                  </button>
                 </div>
               </div>
-            </>
-          ) : (
-            <p style={{ textAlign: "center", color: "#FFF6E1", padding: "40px" }}>No featured event at the moment. Check back soon!</p>
-          )}
+            ))}
+          </div>
+        )}
+
+        <div style={{ textAlign: "center", marginTop: "60px" }}>
+          <Link href="/events/archive" className="btn btn-secondary">
+            VIEW PAST REJOICE EDITIONS
+          </Link>
         </div>
-      </section>
+      </div>
 
-      {/* SECTION 3: TESTIMONIES (NOW DYNAMIC) */}
-      {featuredEvent?.testimonials && featuredEvent.testimonials.length > 0 && (
-        <section id="testimonies">
-          <div className="container">
-            <div className="section-header">
-              <h2 className="section-title dark">WHAT PEOPLE ARE SAYING</h2>
-              <p className="section-subtitle">Testimonies from {featuredEvent.title}</p>
-            </div>
-            <div className="testimonies-grid">
-              {featuredEvent.testimonials.map((testimony: any, index: number) => (
-                <div key={index} className="testimony-card">
-                  <div className="quote-icon"><i className="fas fa-quote-left"></i></div>
-                  <p>{testimony.text}</p>
-                  <div className="testifier">
-                    <span className="name">– {testimony.name}</span>
-                    <span className="role">Attendee, {featuredEvent.title}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* SECTION 4: GALLERY */}
-      <section id="gallery">
-        <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">EVENT GALLERY</h2>
-            <p className="section-subtitle light">Moments captured from our events</p>
-          </div>
+      {/* REGISTRATION MODAL */}
+      {isModalOpen && selectedEvent && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(18, 12, 6, 0.9)", backdropFilter: "blur(10px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
           
-          <div className="gallery-grid" id="galleryGrid">
-            {loadingGallery ? (
-              <p style={{ color: "white", gridColumn: "1 / -1", textAlign: "center", padding: "20px" }}>Loading gallery...</p>
-            ) : galleryImages.length === 0 ? (
-              <p style={{ color: "white", gridColumn: "1 / -1", textAlign: "center", padding: "20px" }}>No images in the gallery yet. Check back soon!</p>
-            ) : (
-              galleryImages.map((src, index) => {
-                const isHidden = index >= 10 && !showMore;
-                
-                return (
-                  <div 
-                    key={index} 
-                    className={`gallery-item ${isHidden ? 'hidden' : ''} ${!isHidden && index >= 10 ? 'show' : ''}`} 
-                    onClick={() => setLightboxImage(src)}
-                  >
-                    <img src={src} alt={`Gallery Image ${index + 1}`} loading={index < 10 ? "eager" : "lazy"} />
-                    <div className="image-placeholder">
-                      <i className="fas fa-image"></i>
-                      <span>Image {index + 1}</span>
-                    </div>
+          <div className="glass-gold" style={{ width: "100%", maxWidth: "500px", borderRadius: "24px", padding: "40px", position: "relative", maxHeight: "90vh", overflowY: "auto" }}>
+            
+            <button onClick={() => setIsModalOpen(false)} style={{ position: "absolute", top: "15px", right: "20px", background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", color: "var(--primary)" }}>
+              &times;
+            </button>
+
+            {!registrationSuccess ? (
+              <>
+                <h2 style={{ fontFamily: "var(--font-heading)", color: "var(--primary)", marginBottom: "10px", textAlign: "center", fontSize: "1.5rem" }}>
+                  Register for {selectedEvent.title}
+                </h2>
+                <p style={{ textAlign: "center", color: "#A89F91", marginBottom: "30px", fontSize: "0.9rem" }}>
+                  Fill in your details to secure your spot.
+                </p>
+
+                <form onSubmit={handleRegisterSubmit} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "bold", marginBottom: "5px", color: "var(--light)" }}>Full Name</label>
+                    <input type="text" className="admin-input" value={name} onChange={(e) => setName(e.target.value)} required placeholder="John Doe" />
                   </div>
-                );
-              })
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "bold", marginBottom: "5px", color: "var(--light)" }}>Email Address</label>
+                    <input type="email" className="admin-input" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="johndoe@example.com" />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "bold", marginBottom: "5px", color: "var(--light)" }}>Phone Number</label>
+                    <input type="tel" className="admin-input" value={phone} onChange={(e) => setPhone(e.target.value)} required placeholder="08012345678" />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "bold", marginBottom: "5px", color: "var(--light)" }}>Department / Group (Optional)</label>
+                    <input type="text" className="admin-input" value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="e.g., Choir, Ushering" />
+                  </div>
+
+                  <button type="submit" disabled={isRegistering} className="btn btn-primary" style={{ marginTop: "10px" }}>
+                    {isRegistering ? "REGISTERING..." : "COMPLETE REGISTRATION"}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <div style={{ fontSize: "4rem", color: "#25D366", marginBottom: "20px" }}>
+                  <i className="fas fa-check-circle"></i>
+                </div>
+                <h2 style={{ fontFamily: "var(--font-heading)", color: "var(--primary)", marginBottom: "10px", fontSize: "1.5rem" }}>
+                  Registration Successful!
+                </h2>
+                <p style={{ color: "#A89F91", marginBottom: "30px" }}>
+                  You have successfully registered for {selectedEvent.title}.
+                </p>
+                
+                {selectedEvent.whatsappLink && (
+                  <div style={{ padding: "20px", backgroundColor: "rgba(37, 211, 102, 0.1)", border: "1px solid #25D366", borderRadius: "12px", marginBottom: "20px" }}>
+                    <p style={{ fontWeight: "bold", color: "var(--light)", marginBottom: "15px" }}>Next step: Join the community!</p>
+                    <a href={selectedEvent.whatsappLink} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ backgroundColor: "#25D366", color: "#FFF", width: "100%" }}>
+                      <i className="fab fa-whatsapp"></i> JOIN WHATSAPP GROUP
+                    </a>
+                  </div>
+                )}
+                <button onClick={() => setIsModalOpen(false)} style={{ background: "none", border: "none", color: "var(--primary)", textDecoration: "underline", cursor: "pointer", fontSize: "0.9rem" }}>
+                  Close this window
+                </button>
+              </div>
             )}
           </div>
-
-          {galleryImages.length > 10 && (
-            <div className="more-btn-wrapper">
-              <button className="btn-more" onClick={() => setShowMore(!showMore)}>
-                {showMore ? "VIEW LESS IMAGES" : "VIEW MORE IMAGES"}
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* SECTION 5: ANTICIPATE */}
-      <section id="anticipate">
-        <div className="anticipate-overlay"></div>
-        <div className="container">
-          <div className="anticipate-glass">
-            <div className="anticipate-icon"><i className="fas fa-trumpet"></i></div>
-            <h2>ANTICIPATE QOL ASAPH 2.0</h2>
-            <p className="anticipate-sub">The next convergence. The next sound. The next move.</p>
-            <p className="anticipate-desc">We are preparing for what's next. Stay tuned for QOL ASAPH 2.0 – another prophetic gathering of ancient sounds and priestly worship. The gates are opening again.</p>
-            <div className="anticipate-badge">COMING SOON</div>
-            <div className="anticipate-date">Date: To Be Announced</div>
-            <div className="countdown-mini" id="countdownMini">
-              <div className="countdown-item-mini"><span>{timeLeft.days}</span><span className="label">DAYS</span></div>
-              <div className="countdown-item-mini"><span>{timeLeft.hours}</span><span className="label">HOURS</span></div>
-              <div className="countdown-item-mini"><span>{timeLeft.minutes}</span><span className="label">MINUTES</span></div>
-              <div className="countdown-item-mini"><span>{timeLeft.seconds}</span><span className="label">SECONDS</span></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 6: CTA */}
-      <section id="cta">
-        <div className="container">
-          <div className="cta-glass">
-            <h2>DON'T MISS THE NEXT MOVE</h2>
-            <p>Stay connected and be part of what God is doing through QOL ASAPH</p>
-            <div className="cta-buttons">
-              <a href="/contact" className="btn-cta btn-cta-primary">CONTACT US</a>
-              <a href="https://chat.whatsapp.com/GTGNbGMsr5Y1MJ9ZY4Gsnc" className="btn-cta btn-cta-secondary" target="_blank" rel="noopener noreferrer">
-                <i className="fab fa-whatsapp"></i> JOIN THE TRAIN
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* --- LIGHTBOX MODAL --- */}
-      {lightboxImage && (
-        <div className="lightbox open" onClick={() => setLightboxImage(null)}>
-          <span className="lightbox-close">&times;</span>
-          <img className="lightbox-content" src={lightboxImage} alt="Enlarged Gallery Image" />
         </div>
       )}
-
-      {/* --- VIDEO MODAL --- */}
-      {videoModalOpen && featuredEvent?.highlightVideoUrl && (
-        <div className="video-modal open" onClick={(e) => {
-          if (e.target === e.currentTarget) setVideoModalOpen(false);
-        }}>
-          <div className="video-modal-content">
-            <span className="video-modal-close" onClick={() => setVideoModalOpen(false)}>&times;</span>
-            <video controls autoPlay style={{ width: "100%", borderRadius: "20px" }}>
-              <source src={featuredEvent.highlightVideoUrl} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 }

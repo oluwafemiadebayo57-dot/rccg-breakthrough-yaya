@@ -18,14 +18,12 @@ export default function AdminInbox() {
         router.push("/admin/login");
         return;
       }
-
       try {
         const querySnapshot = await getDocs(collection(db, "messages"));
         const messagesData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
-        // Sort by newest first
         messagesData.sort((a: any, b: any) => {
            const dateA = a.createdAt?.toMillis() || 0;
            const dateB = b.createdAt?.toMillis() || 0;
@@ -38,22 +36,32 @@ export default function AdminInbox() {
         setLoading(false);
       }
     });
-
     return () => unsubscribe();
   }, [router]);
 
   const handleDelete = async (id: string, name: string) => {
-    const confirmDelete = window.confirm(`Are you sure you want to delete the message from "${name}"?`);
-    
-    if (confirmDelete) {
+    if (confirm(`Delete the message from "${name}"?`)) {
       try {
         await deleteDoc(doc(db, "messages", id));
         setMessages(messages.filter(msg => msg.id !== id));
       } catch (error) {
-        console.error("Error deleting message:", error);
         alert("Failed to delete message.");
       }
     }
+  };
+
+  // Helper to format the timestamp beautifully
+  const formatTimestamp = (timestamp: any) => {
+    if (!timestamp) return "Just now";
+    const date = new Date(timestamp.toMillis());
+    return date.toLocaleString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
   };
 
   return (
@@ -62,26 +70,38 @@ export default function AdminInbox() {
         
         <div className="admin-header">
           <div className="admin-title-group">
-            <h1>INBOX</h1>
-            <p>Messages from the contact form</p>
+            <h1>MESSAGES INBOX</h1>
+            <p>Messages submitted via the contact page</p>
           </div>
           <Link href="/admin" className="admin-btn admin-btn-secondary">Back to Dashboard</Link>
         </div>
 
         {loading ? (
-          <p>Loading messages...</p>
+          <p style={{ color: "var(--light)" }}>Loading messages...</p>
         ) : messages.length === 0 ? (
-          <p>No messages found.</p>
+          <p style={{ color: "var(--light)" }}>No messages found.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             {messages.map((msg) => (
               <div key={msg.id} className="admin-card">
                 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "15px", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "15px", marginBottom: "15px" }}>
+                {/* Header: Name, Email, and Delete Button */}
+                <div style={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  alignItems: "flex-start", 
+                  flexWrap: "wrap", 
+                  gap: "15px", 
+                  borderBottom: "1px solid var(--glass-border)", // Changed from dark black to gold glass
+                  paddingBottom: "15px", 
+                  marginBottom: "20px" 
+                }}>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: "1.2rem", color: "#FFAE00" }}>{msg.subject || "No Subject"}</h3>
-                    <p style={{ margin: "5px 0 0 0", color: "#ccc", fontSize: "0.9rem" }}>
-                      From: <strong>{msg.name}</strong> ({msg.email}) {msg.phone && `| ${msg.phone}`}
+                    <h3 style={{ margin: 0, fontSize: "1.3rem", color: "var(--primary)", fontFamily: "var(--font-heading)" }}>
+                      {msg.name}
+                    </h3>
+                    <p style={{ margin: "5px 0 0 0", color: "#A89F91", fontSize: "0.9rem" }}>
+                      {msg.email}
                     </p>
                   </div>
                   <button 
@@ -93,17 +113,19 @@ export default function AdminInbox() {
                   </button>
                 </div>
 
-                <p style={{ margin: 0, lineHeight: "1.6", color: "#eee" }}>{msg.message}</p>
-                
-                <p style={{ margin: "15px 0 0 0", color: "#666", fontSize: "0.8rem", textAlign: "right" }}>
-                  {msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "Just now"}
+                {/* Message Body */}
+                <p style={{ margin: 0, lineHeight: "1.8", color: "var(--light)", fontSize: "1.05rem" }}>
+                  {msg.message}
                 </p>
-
+                
+                {/* Beautiful Timestamp */}
+                <p style={{ margin: "20px 0 0 0", color: "var(--secondary)", fontSize: "0.85rem", textAlign: "right", fontWeight: "bold" }}>
+                  {formatTimestamp(msg.createdAt)}
+                </p>
               </div>
             ))}
           </div>
         )}
-
       </div>
     </div>
   );
