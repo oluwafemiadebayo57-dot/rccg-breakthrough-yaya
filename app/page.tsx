@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import Link from "next/link";
+import Countdown from "@/components/countdown"; // Added Import
 
 export default function Home() {
   const [upcomingEvent, setUpcomingEvent] = useState<any>(null);
@@ -34,6 +35,13 @@ export default function Home() {
     fetchData();
   }, []);
 
+  // Helper to format the date beautifully
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const options: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+  };
+
   return (
     <>
       {/* HERO */}
@@ -42,8 +50,9 @@ export default function Home() {
           <h1 className="hero-heading">{settings.heroHeading}</h1>
           <p className="hero-subheading">{settings.heroSubheading}</p>
           <div className="hero-buttons">
-            <a href="/events" className="btn btn-primary">UPCOMING EVENTS</a>
-            <a href="/about" className="btn btn-secondary">ABOUT US</a>
+            {/* Changed from <a> to <Link> */}
+            <Link href="/events" className="btn btn-primary">UPCOMING EVENTS</Link>
+            <Link href="/about" className="btn btn-secondary">ABOUT US</Link>
           </div>
         </div>
       </section>
@@ -55,7 +64,7 @@ export default function Home() {
             <div className="glass-gold" style={{ borderRadius: "20px", overflow: "hidden", display: "flex", flexWrap: "wrap" }}>
               
               {/* FIXED HEIGHT IMAGE CONTAINER */}
-              <div style={{ flex: "1 1 350px", height: "400px", position: "relative" }}>
+              <div style={{ flex: "1 1 350px", height: "400px", position: "relative", backgroundColor: "#0a0703" }}>
                 <img 
                   src={upcomingEvent.flyerUrl} 
                   alt={upcomingEvent.title} 
@@ -76,13 +85,18 @@ export default function Home() {
                 </p>
                 <p style={{ color: "#A89F91", marginBottom: "10px" }}>
                   <i className="fas fa-calendar-alt" style={{ marginRight: "10px", color: "var(--secondary)" }}></i> 
-                  {upcomingEvent.date} at {upcomingEvent.time}
+                  {/* Formatted Date */}
+                  {formatDate(upcomingEvent.date)} at {upcomingEvent.time}
                 </p>
-                <p style={{ color: "#A89F91", marginBottom: "25px" }}>
+                <p style={{ color: "#A89F91", marginBottom: "20px" }}>
                   <i className="fas fa-map-marker-alt" style={{ marginRight: "10px", color: "var(--secondary)" }}></i> 
                   {upcomingEvent.location}
                 </p>
-                <Link href="/events" className="btn btn-primary" style={{ alignSelf: "flex-start" }}>
+
+                {/* ADDED COUNTDOWN */}
+                <Countdown date={upcomingEvent.date} time={upcomingEvent.time} />
+
+                <Link href="/events" className="btn btn-primary" style={{ alignSelf: "flex-start", marginTop: "10px" }}>
                   REGISTER NOW
                 </Link>
               </div>

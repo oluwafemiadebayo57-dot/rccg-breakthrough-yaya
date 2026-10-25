@@ -811,3 +811,33 @@ select.admin-input option {
     font-size: 1rem;
   }
 }
+/* =========================================
+   EVENT COUNTDOWN TIMER
+   ========================================= */
+.countdown-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 248, 231, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 10px 15px;
+  min-width: 65px;
+}
+
+.countdown-num {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.countdown-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #A89F91;
+  letter-spacing: 1px;
+  margin-top: 5px;
+}

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
 import Link from "next/link";
+import Countdown from "@/components/countdown"; // Added Import
 
 export default function PublicEvents() {
   const [events, setEvents] = useState<any[]>([]);
@@ -97,12 +98,11 @@ export default function PublicEvents() {
                     {event.title}
                   </h3>
                   
-                  {/* Added proper theme label */}
                   <p style={{ color: "var(--secondary)", fontWeight: "700", fontSize: "1rem", marginBottom: "20px" }}>
                     Theme: {event.theme}
                   </p>
                   
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "25px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "15px" }}>
                     <p style={{ color: "#D1C7B8", fontSize: "0.9rem", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
                       <i className="fas fa-calendar-alt" style={{ color: "var(--primary)" }}></i> {formatDate(event.date)} at {event.time}
                     </p>
@@ -110,8 +110,10 @@ export default function PublicEvents() {
                       <i className="fas fa-map-marker-alt" style={{ color: "var(--primary)" }}></i> {event.location}
                     </p>
                   </div>
+
+                  {/* ADDED COUNTDOWN */}
+                  <Countdown date={event.date} time={event.time} />
                   
-                  {/* Centered button, normal width */}
                   <button onClick={() => handleRegisterClick(event)} className="btn btn-primary" style={{ marginTop: "auto", alignSelf: "center", padding: "14px 40px" }}>
                     REGISTER NOW
                   </button>
