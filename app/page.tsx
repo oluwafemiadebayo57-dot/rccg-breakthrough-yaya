@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import Link from "next/link";
-import Countdown from "@/components/countdown"; // Added Import
+import Countdown from "@/components/countdown";
 
 export default function Home() {
   const [upcomingEvent, setUpcomingEvent] = useState<any>(null);
@@ -25,9 +25,22 @@ export default function Home() {
 
         const querySnapshot = await getDocs(collection(db, "events"));
         const eventsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const upcoming = eventsData.filter((e: any) => e.status === "Upcoming");
+        
+        // AUTOMATIC DATE FILTER
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Set to midnight to include events happening today
+
+        const upcoming = eventsData.filter((e: any) => {
+          if (e.status !== "Upcoming" || !e.date) return false;
+          const eventDate = new Date(e.date);
+          // Only return events happening today or in the future
+          return eventDate >= today;
+        });
+
+        // Sort by date (earliest first)
         upcoming.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        if (upcoming.length > 0) setUpcomingEvent(upcoming[0]); // Always gets the nearest event
+        
+        if (upcoming.length > 0) setUpcomingEvent(upcoming[0]);
       } catch (error) {
         console.error("Error:", error);
       }
@@ -93,7 +106,7 @@ export default function Home() {
 
                 <Countdown date={upcomingEvent.date} time={upcomingEvent.time} />
 
-                {/* ADDED LIVE LINK LOGIC */}
+                {/* LIVE LINK / REGISTER BUTTON LOGIC */}
                 {upcomingEvent.liveLink ? (
                   <div style={{ marginTop: "10px" }}>
                     <a 
